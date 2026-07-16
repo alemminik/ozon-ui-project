@@ -20,8 +20,11 @@ public abstract class ClickableElement extends BaseElement implements Clickable 
 
     @Override
     public void click() {
-        element.shouldBe(interactable, ELEMENT_WAIT_TIMEOUT)
-                .scrollIntoView(CENTERED_SCROLL_OPTIONS)
-                .click();
+        waitUntilInteractable().click();
+    }
+
+    protected SelenideElement waitUntilInteractable() {
+        return element.shouldBe(interactable, ELEMENT_WAIT_TIMEOUT)
+                .scrollIntoView(CENTERED_SCROLL_OPTIONS);
     }
 }
