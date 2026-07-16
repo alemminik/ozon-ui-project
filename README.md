@@ -20,6 +20,7 @@
 ## Требования и входные данные
 
 - Java 17 или новее;
+- Apache Maven 3.9 или новее;
 - Google Chrome;
 - отдельный тестовый аккаунт, авторизованный в `chrome-profile/`.
 
@@ -30,19 +31,19 @@
 Все команды выполняются из каталога `ozon-ui-project`.
 
 ```bash
-./mvnw test
+mvn test
 ```
 
 Запуск одного класса:
 
 ```bash
-./mvnw -Dtest=FavoritesPageTest test
+mvn -Dtest=FavoritesPageTest test
 ```
 
 Запуск одного метода:
 
 ```bash
-./mvnw '-Dtest=FavoritesProductManagementTest#shouldRemoveProductFromFavorites' test
+mvn '-Dtest=FavoritesProductManagementTest#shouldRemoveProductFromFavorites' test
 ```
 
 - `FavoritesPageTest` — тесты 1, 5, 7, 10;
