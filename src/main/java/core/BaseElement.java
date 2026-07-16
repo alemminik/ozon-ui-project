@@ -1,20 +1,16 @@
 package core;
 
 import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ex.UIAssertionError;
 
 import java.time.Duration;
 
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selenide.executeJavaScript;
 
-/**
- * Базовый класс всех элементов страницы.
- * Реализует общий для всех элементов функционал (проверка отображения, клик, получение текста).
- * Конкретные элементы (кнопка, поле ввода, иконка и т.д.) наследуются от него.
- */
+/** Общая основа элементов страницы с ожиданием видимости. */
 public abstract class BaseElement {
 
-    protected static final Duration WAIT = Duration.ofSeconds(15);
+    protected static final Duration ELEMENT_WAIT_TIMEOUT = Duration.ofSeconds(15);
 
     protected final SelenideElement element;
 
@@ -22,25 +18,22 @@ public abstract class BaseElement {
         this.element = element;
     }
 
-    /** Проверка, отображается ли элемент на странице. */
+    /** Возвращает признак отображения элемента после динамического ожидания. */
     public boolean isDisplayed() {
         try {
-            return element.shouldBe(visible, WAIT).isDisplayed();
-        } catch (Throwable e) {
+            waitUntilVisible();
+            return true;
+        } catch (UIAssertionError expectedTimeout) {
             return false;
         }
     }
 
-    /** Текст элемента. */
-    public String getText() {
-        return element.shouldBe(visible, WAIT).getText();
+    /** Проверяет наличие элемента в текущем DOM без ожидания. */
+    public boolean isPresent() {
+        return element.exists();
     }
 
-    /** Клик по элементу (с предварительной прокруткой к нему). */
-    protected void click() {
-        element.shouldBe(visible, WAIT);
-        executeJavaScript(
-                "arguments[0].scrollIntoView({block:'center', inline:'nearest'})", element);
-        element.shouldBe(visible, WAIT).click();
+    protected SelenideElement waitUntilVisible() {
+        return element.shouldBe(visible, ELEMENT_WAIT_TIMEOUT);
     }
 }
