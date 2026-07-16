@@ -80,6 +80,10 @@ public class FavoritesPage extends BasePage {
         return favoriteProducts.isProductDisplayed(productName);
     }
 
+    public boolean isFavoriteProductAbsent(String productName) {
+        return favoriteProducts.isProductAbsent(productName);
+    }
+
     public boolean isFirstFavoriteProductNameAndPriceDisplayed() {
         return favoriteProducts.isFirstProductNameAndPriceDisplayed();
     }

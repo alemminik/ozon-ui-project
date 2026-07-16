@@ -87,6 +87,10 @@ public class FavoriteProductGrid extends BaseElement {
         return VisibleElement.byXPath(getProductCardByNameXPath(productName)).isDisplayed();
     }
 
+    public boolean isProductAbsent(String productName) {
+        return VisibleElement.byXPath(getProductCardByNameXPath(productName)).isAbsent();
+    }
+
     public boolean isFirstProductNameAndPriceDisplayed() {
         String firstProductCardXPath = getFirstProductCardXPath();
         return TextElement.byXPath(getProductNameXPath(
@@ -107,7 +111,7 @@ public class FavoriteProductGrid extends BaseElement {
     }
 
     public boolean isProductInFavorites(String productName) {
-        if (!isProductDisplayed(productName)) {
+        if (!VisibleElement.byXPath(getProductCardByNameXPath(productName)).isPresent()) {
             return false;
         }
         return HeartIcon.byXPath(getProductCardByNameXPath(productName)

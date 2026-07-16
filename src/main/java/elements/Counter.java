@@ -17,8 +17,8 @@ public class Counter extends BaseElement {
     }
 
     public int getValue() {
-        // Бейдж с нулевым значением отсутствует в DOM, поэтому ждём его возможное появление.
-        if (!isDisplayed()) {
+        // Ozon удаляет нулевой бейдж из DOM, поэтому отсутствие определяется без таймаута.
+        if (!isPresent()) {
             return EMPTY_COUNTER_VALUE;
         }
         String counterText = waitUntilVisible().getText()

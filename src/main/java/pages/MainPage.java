@@ -19,8 +19,8 @@ public class MainPage extends BasePage {
         if (favoritesPage.isLoaded()) {
             return favoritesPage;
         }
-        header.clickFavorites();
         try {
+            header.clickFavorites();
             return favoritesPage.waitUntilLoaded();
         } catch (UIAssertionError firstNavigationTimeout) {
             header.clickFavorites();
@@ -33,8 +33,8 @@ public class MainPage extends BasePage {
         if (cartPage.isLoaded()) {
             return cartPage;
         }
-        header.clickCart();
         try {
+            header.clickCart();
             return cartPage.waitUntilLoaded();
         } catch (UIAssertionError firstNavigationTimeout) {
             header.clickCart();

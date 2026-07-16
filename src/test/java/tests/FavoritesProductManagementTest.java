@@ -112,8 +112,8 @@ public class FavoritesProductManagementTest extends BaseTest {
                 .isEqualTo(titleFavoritesCountBeforeRemoval - FAVORITES_COUNT_DECREMENT);
 
         favoritesPage.refreshPage();
-        assertThat(favoritesPage.isFavoriteProductDisplayed(preparedProductName))
-                .as(PRODUCT_REMOVED_ASSERTION).isFalse();
+        assertThat(favoritesPage.isFavoriteProductAbsent(preparedProductName))
+                .as(PRODUCT_REMOVED_ASSERTION).isTrue();
     }
 
     @Test

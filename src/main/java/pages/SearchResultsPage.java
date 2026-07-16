@@ -4,6 +4,7 @@ import core.BasePage;
 import elements.HeartIcon;
 import elements.Link;
 import elements.TextElement;
+import org.openqa.selenium.TimeoutException;
 
 /** Результаты поиска товаров. */
 public class SearchResultsPage extends BasePage {
@@ -30,7 +31,11 @@ public class SearchResultsPage extends BasePage {
     private final HeartIcon firstProductHeart = HeartIcon.byXPath(FIRST_PRODUCT_HEART_XPATH);
 
     public ProductPage openFirstSearchResultProduct() {
-        firstProductLink.click();
+        try {
+            firstProductLink.clickAndWaitForNavigation();
+        } catch (TimeoutException firstNavigationTimeout) {
+            firstProductLink.clickAndWaitForNavigation();
+        }
         return new ProductPage().waitUntilLoaded();
     }
 
