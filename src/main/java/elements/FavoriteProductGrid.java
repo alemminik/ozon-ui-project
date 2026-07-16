@@ -28,7 +28,6 @@ public class FavoriteProductGrid extends BaseElement {
             "//button[.//*[name()='svg'][@width='24' and @height='24']"
                     + "/*[name()='path' and (@fill='white'"
                     + " or translate(@fill, 'abcdef', 'ABCDEF')='#F8104B')]]";
-    private static final String HEART_RELATIVE_XPATH = "." + HEART_DESCENDANT_XPATH;
     private static final String CART_BUTTON_RELATIVE_XPATH =
             "//button[normalize-space()"
                     + " and .//*[name()='svg'][@viewBox='0 0 16 16']]";
@@ -39,12 +38,21 @@ public class FavoriteProductGrid extends BaseElement {
                     + " or (self::div and count(./button)=2"
                     + " and ./span[normalize-space()"
                     + " and number(normalize-space())=number(normalize-space())])]";
+    private static final String FIRST_MATCH_XPATH_TEMPLATE = "(%s)[1]";
+    private static final String LAST_MATCH_XPATH_TEMPLATE = "(%s)[last()]";
+    private static final String RELATIVE_LAST_MATCH_XPATH_TEMPLATE = "(.%s)[last()]";
+    private static final String PREDICATE_XPATH_TEMPLATE = "%s[%s]";
+    private static final String DESCENDANT_PREDICATE_XPATH_TEMPLATE = "%s[.%s]";
 
     private final String rootXPath;
+    private final HeartIcon firstVisibleProductHeart;
 
     private FavoriteProductGrid(String rootXPath) {
         super($x(rootXPath));
         this.rootXPath = rootXPath;
+        firstVisibleProductHeart = HeartIcon.byXPath(String.format(
+                FIRST_MATCH_XPATH_TEMPLATE,
+                rootXPath + PRODUCT_CARD_RELATIVE_XPATH + HEART_DESCENDANT_XPATH));
     }
 
     public int getProductCount() {
@@ -88,8 +96,9 @@ public class FavoriteProductGrid extends BaseElement {
     }
 
     public boolean isAnyCartButtonDisplayed() {
-        return Button.byXPath("(" + getProductCardsXPath()
-                + CART_BUTTON_RELATIVE_XPATH + ")[1]").isDisplayed();
+        return Button.byXPath(String.format(
+                FIRST_MATCH_XPATH_TEMPLATE,
+                getProductCardsXPath() + CART_BUTTON_RELATIVE_XPATH)).isDisplayed();
     }
 
     public void removeProductFromFavorites(String productName) {
@@ -106,8 +115,9 @@ public class FavoriteProductGrid extends BaseElement {
     }
 
     public void addProductToCart(String productName) {
-        Button.byXPath("(" + getProductCardByNameXPath(productName)
-                + CART_BUTTON_RELATIVE_XPATH + ")[1]").click();
+        Button.byXPath(String.format(
+                FIRST_MATCH_XPATH_TEMPLATE,
+                getProductCardByNameXPath(productName) + CART_BUTTON_RELATIVE_XPATH)).click();
     }
 
     public boolean isProductInCart(String productName) {
@@ -119,13 +129,10 @@ public class FavoriteProductGrid extends BaseElement {
         return !getProductCards().isEmpty();
     }
 
-    /** Выключает активные сердца у текущего загруженного набора карточек. */
-    public void removeVisibleProducts() {
-        for (SelenideElement productCard : getProductCards().asFixedIterable()) {
-            HeartIcon favoriteHeart = HeartIcon.from(productCard.$x(HEART_RELATIVE_XPATH));
-            if (favoriteHeart.isActive()) {
-                favoriteHeart.toggleFavoriteState();
-            }
+    /** Удаляет первую видимую карточку, не сохраняя ссылку на перерисовываемый DOM. */
+    public void removeFirstVisibleProduct() {
+        if (firstVisibleProductHeart.isPresent() && firstVisibleProductHeart.isActive()) {
+            firstVisibleProductHeart.toggleFavoriteState();
         }
     }
 
@@ -150,26 +157,37 @@ public class FavoriteProductGrid extends BaseElement {
     }
 
     private String getFirstProductCardXPath() {
-        return "(" + getProductCardsXPath() + ")[1]";
+        return String.format(FIRST_MATCH_XPATH_TEMPLATE, getProductCardsXPath());
     }
 
     private String getFirstProductCardAvailableForCartXPath() {
-        return "(" + getProductCardsXPath()
-                + "[." + CART_BUTTON_RELATIVE_XPATH + "])[1]";
+        return String.format(
+                FIRST_MATCH_XPATH_TEMPLATE,
+                String.format(
+                        DESCENDANT_PREDICATE_XPATH_TEMPLATE,
+                        getProductCardsXPath(),
+                        CART_BUTTON_RELATIVE_XPATH));
     }
 
     private String getProductCardByNameXPath(String productName) {
-        return getProductCardsXPath() + "["
-                + String.format(PRODUCT_LINK_WITH_NAME_RELATIVE_XPATH_TEMPLATE,
-                XPathLiteral.from(productName)) + "]";
+        return String.format(
+                PREDICATE_XPATH_TEMPLATE,
+                getProductCardsXPath(),
+                String.format(
+                        PRODUCT_LINK_WITH_NAME_RELATIVE_XPATH_TEMPLATE,
+                        XPathLiteral.from(productName)));
     }
 
     private String getProductNameXPath(String productCardXPath) {
-        return "(" + productCardXPath + PRODUCT_NAME_DESCENDANT_XPATH + ")[last()]";
+        return String.format(
+                LAST_MATCH_XPATH_TEMPLATE,
+                productCardXPath + PRODUCT_NAME_DESCENDANT_XPATH);
     }
 
     private String getRelativeProductNameXPath() {
-        return "(." + PRODUCT_NAME_DESCENDANT_XPATH + ")[last()]";
+        return String.format(
+                RELATIVE_LAST_MATCH_XPATH_TEMPLATE,
+                PRODUCT_NAME_DESCENDANT_XPATH);
     }
 
     public static FavoriteProductGrid byXPath(String rootXPath) {

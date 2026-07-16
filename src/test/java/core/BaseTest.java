@@ -16,6 +16,9 @@ public abstract class BaseTest {
     private static final String BROWSER_NAME = "chrome";
     private static final String BROWSER_SIZE = "1920x1080";
     private static final String PAGE_LOAD_STRATEGY = "none";
+    private static final String BROWSER_SETUP_LOG_MESSAGE = "Настройка браузера перед тестом";
+    private static final String DATA_CLEANUP_LOG_MESSAGE = "Очистка данных после теста";
+    private static final String BROWSER_CLOSING_LOG_MESSAGE = "Закрытие браузера после теста";
     private static final Duration ELEMENT_WAIT_TIMEOUT = Duration.ofSeconds(15);
     private static final boolean HEADLESS_MODE_ENABLED = false;
 
@@ -24,7 +27,7 @@ public abstract class BaseTest {
 
     @BeforeEach
     public void setUp() {
-        LOGGER.info("Настройка браузера перед тестом");
+        LOGGER.info(BROWSER_SETUP_LOG_MESSAGE);
         Configuration.browser = BROWSER_NAME;
         Configuration.browserSize = BROWSER_SIZE;
         Configuration.pageLoadStrategy = PAGE_LOAD_STRATEGY;
@@ -40,10 +43,10 @@ public abstract class BaseTest {
     @AfterEach
     public void tearDown() {
         try {
-            LOGGER.info("Очистка данных после теста");
+            LOGGER.info(DATA_CLEANUP_LOG_MESSAGE);
             accountStateService.clearFavoritesAndCart();
         } finally {
-            LOGGER.info("Закрытие браузера после теста");
+            LOGGER.info(BROWSER_CLOSING_LOG_MESSAGE);
             Selenide.closeWebDriver();
         }
     }

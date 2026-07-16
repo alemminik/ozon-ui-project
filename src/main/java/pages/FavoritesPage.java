@@ -1,10 +1,10 @@
 package pages;
 
 import core.BasePage;
-import core.XPathLiteral;
 import elements.Counter;
 import elements.FavoriteProductGrid;
 import elements.Link;
+import elements.LinkCollection;
 import elements.RecommendationGrid;
 import elements.VisibleElement;
 
@@ -23,18 +23,22 @@ public class FavoritesPage extends BasePage {
             FAVORITES_TITLE_XPATH + "/following-sibling::div[1]";
     private static final String CATEGORY_FILTER_XPATH =
             "//div[@data-widget='filtersDesktop']";
-    private static final String CATEGORY_LINK_XPATH_TEMPLATE =
-            CATEGORY_FILTER_XPATH + "//a[normalize-space()=%s]";
+    private static final String CATEGORY_LINKS_XPATH =
+            CATEGORY_FILTER_XPATH + "//a[normalize-space()]";
     private static final String ALL_CATEGORIES_LINK_XPATH =
             CATEGORY_FILTER_XPATH + "//a[normalize-space()='Все категории']";
     private static final String RECOMMENDATIONS_SECTION_XPATH =
             "//div[@data-widget='paginator'"
                     + " and .//span[normalize-space()='Подобрано для вас']]";
+    private static final String FAVORITES_CLEANUP_FAILURE_MESSAGE =
+            "Не удалось полностью очистить избранное через UI";
 
     private final VisibleElement favoritesTitle = VisibleElement.byXPath(FAVORITES_TITLE_XPATH);
     private final VisibleElement favoritesList = VisibleElement.byXPath(FAVORITES_LIST_XPATH);
     private final VisibleElement categoryFilter = VisibleElement.byXPath(CATEGORY_FILTER_XPATH);
     private final Counter favoritesHeaderCounter = Counter.byXPath(FAVORITES_HEADER_COUNTER_XPATH);
+    private final LinkCollection categoryLinks = LinkCollection.byXPath(CATEGORY_LINKS_XPATH);
+    private final Link allCategoriesLink = Link.byXPath(ALL_CATEGORIES_LINK_XPATH);
     private final FavoriteProductGrid favoriteProducts =
             FavoriteProductGrid.byXPath(FAVORITES_LIST_XPATH);
     private final RecommendationGrid recommendations =
@@ -99,9 +103,7 @@ public class FavoritesPage extends BasePage {
     /** Выбирает категорию и ожидает завершения обновления списка. */
     public FavoritesPage selectFavoritesCategory(String categoryName) {
         String contentStateBeforeFiltering = favoriteProducts.getContentState();
-        Link.byXPath(String.format(
-                CATEGORY_LINK_XPATH_TEMPLATE,
-                XPathLiteral.from(categoryName))).click();
+        categoryLinks.clickByExactText(categoryName);
         favoriteProducts.waitUntilContentChanges(contentStateBeforeFiltering);
         return this;
     }
@@ -109,7 +111,7 @@ public class FavoritesPage extends BasePage {
     /** Возвращает полный список через пользовательский контрол сброса фильтра. */
     public FavoritesPage clearFavoritesCategoryFilter() {
         String contentStateBeforeReset = favoriteProducts.getContentState();
-        Link.byXPath(ALL_CATEGORIES_LINK_XPATH).click();
+        allCategoriesLink.click();
         favoriteProducts.waitUntilContentChanges(contentStateBeforeReset);
         return this;
     }
@@ -127,12 +129,11 @@ public class FavoritesPage extends BasePage {
              cleanupPass < MAX_FAVORITES_CLEANUP_PASSES
                      && favoriteProducts.isAnyProductPresent();
              cleanupPass++) {
-            favoriteProducts.removeVisibleProducts();
+            favoriteProducts.removeFirstVisibleProduct();
             refreshPage();
         }
         if (favoriteProducts.isAnyProductPresent()) {
-            throw new IllegalStateException(
-                    "Не удалось полностью очистить избранное через UI");
+            throw new IllegalStateException(FAVORITES_CLEANUP_FAILURE_MESSAGE);
         }
     }
 

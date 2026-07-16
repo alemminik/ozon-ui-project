@@ -1,7 +1,6 @@
 package elements;
 
 import com.codeborne.selenide.SelenideElement;
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
 import java.util.Arrays;
@@ -17,7 +16,6 @@ public class HeartIcon extends ClickableElement {
     private static final String ARIA_CHECKED_ATTRIBUTE = "aria-checked";
     private static final String ARIA_LABEL_ATTRIBUTE = "aria-label";
     private static final String CLASS_ATTRIBUTE = "class";
-    private static final String FILL_ATTRIBUTE = "fill";
     private static final String TRUE_ATTRIBUTE_VALUE = "true";
     private static final String ADD_TO_FAVORITES_LABEL = "добавить в избранное";
     private static final String REMOVE_FROM_FAVORITES_LABEL = "удалить из избранного";
@@ -26,7 +24,9 @@ public class HeartIcon extends ClickableElement {
     private static final String SELECTED_CLASS_MARKER = "selected";
     private static final String CSS_CLASS_SEPARATOR_PATTERN = "\\s+";
     private static final String ACTIVE_HEART_FILL_COLOR = "#F8104B";
-    private static final String FIRST_SVG_PATH_XPATH = ".//*[name()='path'][1]";
+    private static final String ACTIVE_SVG_PATH_XPATH =
+            ".//*[name()='path' and translate(@fill, 'abcdef', 'ABCDEF')='"
+                    + ACTIVE_HEART_FILL_COLOR + "']";
     private static final String EXPECTED_STATE_DESCRIPTION = "состояние избранного: %s";
 
     private HeartIcon(SelenideElement element) {
@@ -55,14 +55,6 @@ public class HeartIcon extends ClickableElement {
                 String.format(EXPECTED_STATE_DESCRIPTION, expectedActiveState),
                 currentElement -> isActiveState(currentElement) == expectedActiveState),
                 ELEMENT_WAIT_TIMEOUT);
-    }
-
-    public static HeartIcon byXPath(String xpathExpression) {
-        return new HeartIcon($x(xpathExpression));
-    }
-
-    public static HeartIcon from(SelenideElement element) {
-        return new HeartIcon(element);
     }
 
     private static boolean isActiveState(WebElement currentElement) {
@@ -107,14 +99,19 @@ public class HeartIcon extends ClickableElement {
     }
 
     private static boolean isFilledHeartDisplayed(WebElement currentElement) {
-        return currentElement.findElements(By.xpath(FIRST_SVG_PATH_XPATH)).stream()
-                .findFirst()
-                .map(firstSvgPath -> ACTIVE_HEART_FILL_COLOR.equalsIgnoreCase(
-                        firstSvgPath.getAttribute(FILL_ATTRIBUTE)))
-                .orElse(false);
+        return !currentElement.findElements(
+                org.openqa.selenium.By.xpath(ACTIVE_SVG_PATH_XPATH)).isEmpty();
     }
 
     private static boolean isTrueAttributeValue(String attributeValue) {
         return TRUE_ATTRIBUTE_VALUE.equalsIgnoreCase(attributeValue);
+    }
+
+    public static HeartIcon byXPath(String xpathExpression) {
+        return new HeartIcon($x(xpathExpression));
+    }
+
+    public static HeartIcon from(SelenideElement element) {
+        return new HeartIcon(element);
     }
 }

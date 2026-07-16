@@ -12,6 +12,10 @@ public class AccountStateService {
 
     private static final Duration CATEGORY_FILTER_READY_TIMEOUT = Duration.ofSeconds(45);
     private static final Duration CATEGORY_FILTER_POLL_INTERVAL = Duration.ofSeconds(2);
+    private static final String PRODUCT_ALREADY_FAVORITE_MESSAGE_TEMPLATE =
+            "Товар уже находится в избранном после очистки: %s";
+    private static final String CATEGORY_FILTER_TIMEOUT_MESSAGE =
+            "Ozon не подготовил фильтр категорий избранного";
 
     /** Полностью очищает избранное и корзину независимо от текущей страницы. */
     public void clearFavoritesAndCart() {
@@ -29,7 +33,7 @@ public class AccountStateService {
         String productName = searchResultsPage.getFirstSearchResultProductName();
         if (searchResultsPage.isFirstSearchResultInFavorites()) {
             throw new IllegalStateException(
-                    "Товар уже находится в избранном после очистки: " + productName);
+                    String.format(PRODUCT_ALREADY_FAVORITE_MESSAGE_TEMPLATE, productName));
         }
         searchResultsPage.addFirstSearchResultToFavorites();
         return productName;
@@ -41,7 +45,7 @@ public class AccountStateService {
         new FluentWait<>(favoritesPage)
                 .withTimeout(CATEGORY_FILTER_READY_TIMEOUT)
                 .pollingEvery(CATEGORY_FILTER_POLL_INTERVAL)
-                .withMessage("Ozon не подготовил фильтр категорий избранного")
+                .withMessage(CATEGORY_FILTER_TIMEOUT_MESSAGE)
                 .until(currentPage -> {
                     if (currentPage.isCategoryFilterPresent()) {
                         return true;
