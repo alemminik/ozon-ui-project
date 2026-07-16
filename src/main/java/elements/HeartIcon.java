@@ -1,90 +1,120 @@
 package elements;
 
 import com.codeborne.selenide.SelenideElement;
-import core.BaseElement;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 
+import java.util.Arrays;
+import java.util.Locale;
+
+import static com.codeborne.selenide.Condition.match;
 import static com.codeborne.selenide.Selenide.$x;
-import static com.codeborne.selenide.Selenide.executeJavaScript;
-import static com.codeborne.selenide.Selenide.sleep;
-import static com.codeborne.selenide.Condition.visible;
 
-/**
- * Элемент «иконка сердца» (добавить/убрать из избранного).
- * Умеет: нажимать и сообщать, активна ли иконка (товар в избранном — красная)
- * или неактивна (товар не в избранном — серая).
- */
-public class HeartIcon extends BaseElement {
+/** Иконка управления состоянием товара в избранном. */
+public class HeartIcon extends ClickableElement {
+
+    private static final String ARIA_PRESSED_ATTRIBUTE = "aria-pressed";
+    private static final String ARIA_CHECKED_ATTRIBUTE = "aria-checked";
+    private static final String ARIA_LABEL_ATTRIBUTE = "aria-label";
+    private static final String CLASS_ATTRIBUTE = "class";
+    private static final String FILL_ATTRIBUTE = "fill";
+    private static final String TRUE_ATTRIBUTE_VALUE = "true";
+    private static final String ADD_TO_FAVORITES_LABEL = "добавить в избранное";
+    private static final String REMOVE_FROM_FAVORITES_LABEL = "удалить из избранного";
+    private static final String CLEAR_FROM_FAVORITES_LABEL = "убрать из избранного";
+    private static final String ACTIVE_CLASS_MARKER = "active";
+    private static final String SELECTED_CLASS_MARKER = "selected";
+    private static final String CSS_CLASS_SEPARATOR_PATTERN = "\\s+";
+    private static final String ACTIVE_HEART_FILL_COLOR = "#F8104B";
+    private static final String FIRST_SVG_PATH_XPATH = ".//*[name()='path'][1]";
+    private static final String EXPECTED_STATE_DESCRIPTION = "состояние избранного: %s";
 
     private HeartIcon(SelenideElement element) {
         super(element);
     }
 
-    public static HeartIcon byXpath(String xpath) {
-        return new HeartIcon($x(xpath));
+    /** Кликает по иконке и ожидает изменения состояния. */
+    @Override
+    public void click() {
+        boolean wasActive = isActive();
+        super.click();
+        waitUntilActiveState(!wasActive);
     }
 
-    /** Нажатие на иконку сердца. */
-    public void toggle() {
-        boolean before = isActive();
-        clickHeart();
-        long firstAttemptDeadline = System.currentTimeMillis() + 2000;
-        while (System.currentTimeMillis() < firstAttemptDeadline) {
-            if (isActive() != before) {
-                return;
-            }
-            sleep(200);
-        }
-
-        // После eager-навигации кнопка уже видима, но React иногда ещё не
-        // подключил обработчик. Повторяем клик только если состояние не изменилось.
-        clickHeart();
-        waitForState(!before);
+    /** Переключает состояние товара в избранном реальным пользовательским кликом. */
+    public void toggleFavoriteState() {
+        click();
     }
 
-    private void clickHeart() {
-        element.shouldBe(visible, WAIT);
-        executeJavaScript(
-                "arguments[0].scrollIntoView({block:'center', inline:'nearest'})", element);
-        executeJavaScript("arguments[0].click()", element);
-    }
-
-    /**
-     * Активна ли иконка (товар добавлен в избранное).
-     * Ozon помечает активное состояние через aria-pressed/aria-checked или отдельный класс,
-     * поэтому проверяем несколько признаков.
-     */
     public boolean isActive() {
-        String pressed = element.getAttribute("aria-pressed");
-        String checked = element.getAttribute("aria-checked");
-        String label = element.getAttribute("aria-label");
-        String cls = element.getAttribute("class");
-        boolean byAria = "true".equalsIgnoreCase(pressed) || "true".equalsIgnoreCase(checked);
-        boolean byLabel = label != null && (label.toLowerCase().contains("удалить из избранного")
-                || label.toLowerCase().contains("убрать из избранного"));
-        boolean byClass = cls != null && (cls.contains("active") || cls.contains("selected"));
-        boolean byFilledHeart = false;
-        try {
-            String fill = element.$x(".//*[name()='path'][1]").getAttribute("fill");
-            byFilledHeart = fill != null && fill.equalsIgnoreCase("#F8104B");
-        } catch (Throwable ignored) {
-            // У некоторых вариантов кнопки состояние доступно только через aria/class.
-        }
-        return byAria || byLabel || byClass || byFilledHeart;
+        return isActiveState(waitUntilVisible());
     }
 
-    public void waitForState(boolean active) {
-        long deadline = System.currentTimeMillis() + WAIT.toMillis();
-        while (System.currentTimeMillis() < deadline) {
-            if (isActive() == active) {
-                return;
-            }
-            sleep(250);
+    private void waitUntilActiveState(boolean expectedActiveState) {
+        element.shouldHave(match(
+                String.format(EXPECTED_STATE_DESCRIPTION, expectedActiveState),
+                currentElement -> isActiveState(currentElement) == expectedActiveState),
+                ELEMENT_WAIT_TIMEOUT);
+    }
+
+    public static HeartIcon byXPath(String xpathExpression) {
+        return new HeartIcon($x(xpathExpression));
+    }
+
+    public static HeartIcon from(SelenideElement element) {
+        return new HeartIcon(element);
+    }
+
+    private static boolean isActiveState(WebElement currentElement) {
+        // Карточки и страницы товара используют разные признаки состояния избранного.
+        String ariaPressed = currentElement.getAttribute(ARIA_PRESSED_ATTRIBUTE);
+        String ariaChecked = currentElement.getAttribute(ARIA_CHECKED_ATTRIBUTE);
+        String ariaLabel = currentElement.getAttribute(ARIA_LABEL_ATTRIBUTE);
+        String classAttribute = currentElement.getAttribute(CLASS_ATTRIBUTE);
+        Boolean ariaLabelState = getAriaLabelState(ariaLabel);
+
+        if (ariaLabelState != null) {
+            return ariaLabelState;
         }
-        throw new AssertionError("Heart state did not become " + active
-                + "; aria-label=" + element.getAttribute("aria-label")
-                + "; class=" + element.getAttribute("class")
-                + "; style=" + element.getAttribute("style")
-                + "; color=" + element.getCssValue("color")
-                + "; path-fill=" + element.$x(".//*[name()='path'][1]").getAttribute("fill"));
+        return isTrueAttributeValue(ariaPressed)
+                || isTrueAttributeValue(ariaChecked)
+                || isActiveClass(classAttribute)
+                || isFilledHeartDisplayed(currentElement);
+    }
+
+    private static Boolean getAriaLabelState(String ariaLabel) {
+        if (ariaLabel == null) {
+            return null;
+        }
+        String normalizedLabel = ariaLabel.toLowerCase(Locale.ROOT);
+        if (normalizedLabel.contains(REMOVE_FROM_FAVORITES_LABEL)
+                || normalizedLabel.contains(CLEAR_FROM_FAVORITES_LABEL)) {
+            return true;
+        }
+        if (normalizedLabel.contains(ADD_TO_FAVORITES_LABEL)) {
+            return false;
+        }
+        return null;
+    }
+
+    private static boolean isActiveClass(String classAttribute) {
+        if (classAttribute == null) {
+            return false;
+        }
+        return Arrays.stream(classAttribute.split(CSS_CLASS_SEPARATOR_PATTERN))
+                .anyMatch(cssClass -> ACTIVE_CLASS_MARKER.equals(cssClass)
+                        || SELECTED_CLASS_MARKER.equals(cssClass));
+    }
+
+    private static boolean isFilledHeartDisplayed(WebElement currentElement) {
+        return currentElement.findElements(By.xpath(FIRST_SVG_PATH_XPATH)).stream()
+                .findFirst()
+                .map(firstSvgPath -> ACTIVE_HEART_FILL_COLOR.equalsIgnoreCase(
+                        firstSvgPath.getAttribute(FILL_ATTRIBUTE)))
+                .orElse(false);
+    }
+
+    private static boolean isTrueAttributeValue(String attributeValue) {
+        return TRUE_ATTRIBUTE_VALUE.equalsIgnoreCase(attributeValue);
     }
 }

@@ -2,76 +2,57 @@ package pages;
 
 import core.BasePage;
 import elements.HeartIcon;
+import elements.Link;
+import elements.TextElement;
 
-import static com.codeborne.selenide.Selenide.$x;
-
-/**
- * Страница результатов поиска.
- * Позволяет открыть товар, нажать иконку сердца у карточки и узнать состояние иконки.
- */
+/** Результаты поиска товаров. */
 public class SearchResultsPage extends BasePage {
 
-    /** Открыть товар с указанным названием. Возвращает страницу товара. */
-    public ProductPage openProductByName(String name) {
-        String card = String.format(Locators.SEARCH_CARD_BY_NAME, name);
-        String link = $x(card).exists()
-                ? String.format(Locators.SEARCH_PRODUCT_LINK_BY_NAME, name)
-                : Locators.SEARCH_FIRST_PRODUCT_LINK;
-        openLinkInCurrentTab(link);
-        return new ProductPage();
+    private static final String SEARCH_GRID_XPATH =
+            "(//div[@data-widget='tileGridDesktop'])[1]";
+    private static final String FIRST_PRODUCT_CARD_XPATH =
+            "(" + SEARCH_GRID_XPATH
+                    + "//div[contains(concat(' ', normalize-space(@class), ' '),"
+                    + " ' tile-root ')])[1]";
+    private static final String FIRST_PRODUCT_LINK_XPATH = FIRST_PRODUCT_CARD_XPATH
+            + "//a[contains(@href, '/product/')][normalize-space()][1]";
+    private static final String FIRST_PRODUCT_NAME_XPATH =
+            "(" + FIRST_PRODUCT_CARD_XPATH
+                    + "//a[contains(@href, '/product/')][normalize-space()])[last()]";
+    private static final String FIRST_PRODUCT_HEART_XPATH =
+            "(" + FIRST_PRODUCT_CARD_XPATH
+                    + "//button[.//*[name()='svg'][@width='24' and @height='24']"
+                    + "/*[name()='path' and (@fill='white'"
+                    + " or translate(@fill, 'abcdef', 'ABCDEF')='#F8104B')]])[1]";
+
+    private final TextElement firstProductName = TextElement.byXPath(FIRST_PRODUCT_NAME_XPATH);
+    private final Link firstProductLink = Link.byXPath(FIRST_PRODUCT_LINK_XPATH);
+    private final HeartIcon firstProductHeart = HeartIcon.byXPath(FIRST_PRODUCT_HEART_XPATH);
+
+    public ProductPage openFirstSearchResultProduct() {
+        firstProductLink.click();
+        return new ProductPage().waitUntilLoaded();
     }
 
-    /** Открыть первый товар из результатов поиска. */
-    public ProductPage openFirstProduct() {
-        openLinkInCurrentTab(Locators.SEARCH_FIRST_PRODUCT_LINK);
-        return new ProductPage();
+    public void addFirstSearchResultToFavorites() {
+        firstProductHeart.toggleFavoriteState();
     }
 
-    /** Нажать иконку сердца у карточки товара с указанным названием. */
-    public void clickHeartByName(String name) {
-        heartByName(name).toggle();
+    public void toggleFirstSearchResultFavoriteState() {
+        firstProductHeart.toggleFavoriteState();
     }
 
-    /** Нажать иконку сердца у первого товара в выдаче. */
-    public void clickFirstHeart() {
-        HeartIcon.byXpath(Locators.SEARCH_FIRST_CARD_HEART).toggle();
+    public String getFirstSearchResultProductName() {
+        return firstProductName.getText();
     }
 
-    public void addFirstToFavorites() {
-        HeartIcon heart = HeartIcon.byXpath(Locators.SEARCH_FIRST_CARD_HEART);
-        if (!heart.isActive()) {
-            heart.toggle();
-        }
-        heart.waitForState(true);
+    public boolean isFirstSearchResultInFavorites() {
+        return firstProductHeart.isActive();
     }
 
-    public String getFirstProductName() {
-        return $x(Locators.SEARCH_FIRST_PRODUCT_NAME).getText().trim();
+    SearchResultsPage waitUntilLoaded() {
+        firstProductName.getText();
+        return this;
     }
 
-    public void ensureFirstHeartActive(boolean active) {
-        HeartIcon heart = HeartIcon.byXpath(Locators.SEARCH_FIRST_CARD_HEART);
-        if (heart.isActive() != active) {
-            heart.toggle();
-            heart.waitForState(active);
-        }
-    }
-
-    /** Активна ли иконка сердца у карточки товара с указанным названием. */
-    public boolean isHeartActiveByName(String name) {
-        return heartByName(name).isActive();
-    }
-
-    /** Активна ли иконка сердца у первого товара. */
-    public boolean isFirstHeartActive() {
-        return HeartIcon.byXpath(Locators.SEARCH_FIRST_CARD_HEART).isActive();
-    }
-
-    private HeartIcon heartByName(String name) {
-        String card = String.format(Locators.SEARCH_CARD_BY_NAME, name);
-        String heart = $x(card).exists()
-                ? String.format(Locators.SEARCH_CARD_HEART_BY_NAME, name)
-                : Locators.SEARCH_FIRST_CARD_HEART;
-        return HeartIcon.byXpath(heart);
-    }
 }
