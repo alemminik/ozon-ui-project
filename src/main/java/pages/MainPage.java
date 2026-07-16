@@ -1,50 +1,48 @@
 package pages;
 
+import com.codeborne.selenide.ex.UIAssertionError;
 import core.BasePage;
-import elements.Input;
+import elements.Header;
 
-import static com.codeborne.selenide.Selenide.$x;
-import static com.codeborne.selenide.Selenide.open;
-
-/** Общие элементы шапки Ozon: поиск, избранное, корзина и счётчик избранного. */
+/** Главная страница и доступные на всех страницах действия общей шапки. */
 public class MainPage extends BasePage {
 
-    public static final String URL = "https://www.ozon.ru";
+    private final Header header = new Header();
 
-    private final Input searchInput = Input.byXpath(Locators.SEARCH_INPUT);
-
-    public MainPage openMain() {
-        open(URL);
-        return this;
-    }
-
-    public SearchResultsPage search(String query) {
-        searchInput.fill(query);
-        return new SearchResultsPage();
+    public SearchResultsPage search(String searchQuery) {
+        header.submitSearchQuery(searchQuery);
+        return new SearchResultsPage().waitUntilLoaded();
     }
 
     public FavoritesPage openFavorites() {
-        openLinkInCurrentTab(Locators.HEADER_FAVORITES_LINK);
-        return new FavoritesPage();
+        FavoritesPage favoritesPage = new FavoritesPage();
+        if (favoritesPage.isLoaded()) {
+            return favoritesPage;
+        }
+        header.clickFavorites();
+        try {
+            return favoritesPage.waitUntilLoaded();
+        } catch (UIAssertionError firstNavigationTimeout) {
+            header.clickFavorites();
+            return new FavoritesPage().waitUntilLoaded();
+        }
     }
 
     public CartPage openCart() {
-        openLinkInCurrentTab(Locators.HEADER_CART_LINK);
-        return new CartPage();
+        CartPage cartPage = new CartPage();
+        if (cartPage.isLoaded()) {
+            return cartPage;
+        }
+        header.clickCart();
+        try {
+            return cartPage.waitUntilLoaded();
+        } catch (UIAssertionError firstNavigationTimeout) {
+            header.clickCart();
+            return new CartPage().waitUntilLoaded();
+        }
     }
 
     public int getHeaderFavoritesCount() {
-        return CounterReader.read(Locators.HEADER_FAVORITES_COUNTER);
-    }
-
-    static class CounterReader {
-        static int read(String xpath) {
-            try {
-                String text = $x(xpath).getText().replaceAll("\\D+", "");
-                return text.isEmpty() ? 0 : Integer.parseInt(text);
-            } catch (Throwable e) {
-                return 0;
-            }
-        }
+        return header.getFavoritesCount();
     }
 }

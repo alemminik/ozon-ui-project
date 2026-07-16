@@ -1,195 +1,170 @@
 package pages;
 
-import com.codeborne.selenide.ElementsCollection;
 import core.BasePage;
-import elements.Button;
-import elements.HeartIcon;
+import core.XPathLiteral;
+import elements.Counter;
+import elements.FavoriteProductGrid;
+import elements.Link;
+import elements.RecommendationGrid;
+import elements.VisibleElement;
 
-import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 
-import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selenide.$$x;
-import static com.codeborne.selenide.Selenide.$x;
-import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.sleep;
-
-/**
- * Раздел «Избранное».
- * Позволяет работать со списком избранных товаров, фильтром по категориям,
- * блоком рекомендаций и счётчиками. Проверки (assert) выполняются в тестах —
- * страница только возвращает данные и выполняет действия.
- */
+/** Раздел «Избранное»: товары, категории, корзина и рекомендации. */
 public class FavoritesPage extends BasePage {
 
-    /** Отображается ли заголовок «Избранное». */
-    public boolean isTitleDisplayed() {
-        return exists(Locators.FAVORITES_TITLE);
+    private static final int MAX_FAVORITES_CLEANUP_PASSES = 20;
+    private static final String FAVORITES_TITLE_XPATH =
+            "//div[@data-widget='tabs']//div[normalize-space()='Избранное']";
+    private static final String FAVORITES_LIST_XPATH =
+            "(//div[@data-widget='tabs']/following::div"
+                    + "[@data-widget='tileGridDesktop'])[1]";
+    private static final String FAVORITES_HEADER_COUNTER_XPATH =
+            FAVORITES_TITLE_XPATH + "/following-sibling::div[1]";
+    private static final String CATEGORY_FILTER_XPATH =
+            "//div[@data-widget='filtersDesktop']";
+    private static final String CATEGORY_LINK_XPATH_TEMPLATE =
+            CATEGORY_FILTER_XPATH + "//a[normalize-space()=%s]";
+    private static final String ALL_CATEGORIES_LINK_XPATH =
+            CATEGORY_FILTER_XPATH + "//a[normalize-space()='Все категории']";
+    private static final String RECOMMENDATIONS_SECTION_XPATH =
+            "//div[@data-widget='paginator'"
+                    + " and .//span[normalize-space()='Подобрано для вас']]";
+
+    private final VisibleElement favoritesTitle = VisibleElement.byXPath(FAVORITES_TITLE_XPATH);
+    private final VisibleElement favoritesList = VisibleElement.byXPath(FAVORITES_LIST_XPATH);
+    private final VisibleElement categoryFilter = VisibleElement.byXPath(CATEGORY_FILTER_XPATH);
+    private final Counter favoritesHeaderCounter = Counter.byXPath(FAVORITES_HEADER_COUNTER_XPATH);
+    private final FavoriteProductGrid favoriteProducts =
+            FavoriteProductGrid.byXPath(FAVORITES_LIST_XPATH);
+    private final RecommendationGrid recommendations =
+            RecommendationGrid.byXPath(RECOMMENDATIONS_SECTION_XPATH);
+
+    public boolean isFavoritesTitleDisplayed() {
+        return favoritesTitle.isDisplayed();
     }
 
-    /** Отображается ли список товаров. */
-    public boolean isListDisplayed() {
-        return exists(Locators.FAVORITES_LIST);
+    public boolean isFavoritesListDisplayed() {
+        return favoritesList.isDisplayed();
     }
 
-    /** Отображается ли блок фильтрации по категориям. */
     public boolean isCategoryFilterDisplayed() {
-        return exists(Locators.FAVORITES_CATEGORY_FILTER);
+        return categoryFilter.isDisplayed();
     }
 
-    /** Количество товаров в списке избранного. */
-    public int getItemsCount() {
-        if (!items().isEmpty()) {
-            items().first().shouldBe(visible, Duration.ofSeconds(15));
+    public boolean isCategoryFilterPresent() {
+        return categoryFilter.isPresent();
+    }
+
+    public int getFavoriteProductCount() {
+        return favoriteProducts.getProductCount();
+    }
+
+    public List<String> getFavoriteProductNames() {
+        return favoriteProducts.getProductNames();
+    }
+
+    public String getFirstFavoriteProductName() {
+        return favoriteProducts.getFirstProductName();
+    }
+
+    public String getFirstAvailableFavoriteProductNameForCart() {
+        return favoriteProducts.getFirstProductNameAvailableForCart();
+    }
+
+    public boolean isFavoriteProductDisplayed(String productName) {
+        return favoriteProducts.isProductDisplayed(productName);
+    }
+
+    public boolean isFirstFavoriteProductNameAndPriceDisplayed() {
+        return favoriteProducts.isFirstProductNameAndPriceDisplayed();
+    }
+
+    public boolean isAnyFavoriteProductCartButtonDisplayed() {
+        return favoriteProducts.isAnyCartButtonDisplayed();
+    }
+
+    public void removeProductFromFavorites(String productName) {
+        favoriteProducts.removeProductFromFavorites(productName);
+    }
+
+    public boolean isProductInFavorites(String productName) {
+        return favoriteProducts.isProductInFavorites(productName);
+    }
+
+    public int getFavoritesTitleProductCount() {
+        return favoritesHeaderCounter.getValue();
+    }
+
+    /** Выбирает категорию и ожидает завершения обновления списка. */
+    public FavoritesPage selectFavoritesCategory(String categoryName) {
+        String contentStateBeforeFiltering = favoriteProducts.getContentState();
+        Link.byXPath(String.format(
+                CATEGORY_LINK_XPATH_TEMPLATE,
+                XPathLiteral.from(categoryName))).click();
+        favoriteProducts.waitUntilContentChanges(contentStateBeforeFiltering);
+        return this;
+    }
+
+    /** Возвращает полный список через пользовательский контрол сброса фильтра. */
+    public FavoritesPage clearFavoritesCategoryFilter() {
+        String contentStateBeforeReset = favoriteProducts.getContentState();
+        Link.byXPath(ALL_CATEGORIES_LINK_XPATH).click();
+        favoriteProducts.waitUntilContentChanges(contentStateBeforeReset);
+        return this;
+    }
+
+    public void addFavoriteProductToCart(String productName) {
+        favoriteProducts.addProductToCart(productName);
+    }
+
+    public boolean isProductInCart(String productName) {
+        return favoriteProducts.isProductInCart(productName);
+    }
+
+    public void removeAllProductsFromFavorites() {
+        for (int cleanupPass = 0;
+             cleanupPass < MAX_FAVORITES_CLEANUP_PASSES
+                     && favoriteProducts.isAnyProductPresent();
+             cleanupPass++) {
+            favoriteProducts.removeVisibleProducts();
+            refreshPage();
         }
-        return items().size();
-    }
-
-    public List<String> getItemNames() {
-        List<String> names = new ArrayList<>();
-        for (var item : items().asFixedIterable()) {
-            String name = item.$x("(.//a[contains(@href, '/product/')][normalize-space()])[last()]")
-                    .getText().trim();
-            if (!name.isBlank()) {
-                names.add(name);
-            }
-        }
-        return names;
-    }
-
-    public String getFirstProductName() {
-        return items().first()
-                .shouldBe(visible, Duration.ofSeconds(15))
-                .$x("(.//a[contains(@href, '/product/')][normalize-space()])[last()]")
-                .getText().trim();
-    }
-
-    public String getFirstAvailableForCartProductName() {
-        var card = $x("(" + Locators.FAVORITES_ITEMS + "[.//button[normalize-space()]])[1]")
-                .shouldBe(visible, Duration.ofSeconds(15));
-        return card.$x("(.//a[contains(@href, '/product/')][normalize-space()])[last()]")
-                .getText().trim();
-    }
-
-    /** Есть ли в списке товар с указанным названием. */
-    public boolean hasProduct(String name) {
-        return exists(String.format(Locators.FAVORITES_CARD_BY_NAME, name));
-    }
-
-    /** Сколько карточек с указанным названием в списке (для проверки отсутствия дублей). */
-    public int countProduct(String name) {
-        return $$x(String.format(Locators.FAVORITES_CARD_BY_NAME, name)).size();
-    }
-
-    /** Отображаются ли у карточки товара его название и цена (проверка первой карточки). */
-    public boolean isFirstCardHasNameAndPrice() {
-        if (getItemsCount() == 0) {
-            return false;
-        }
-        var first = items().first();
-        boolean hasName = first.$x("(.//a[contains(@href, '/product/')][normalize-space()])[last()]")
-                .is(visible);
-        boolean hasPrice = first.$x(".//*[contains(normalize-space(.), '₽')]").is(visible);
-        return hasName && hasPrice;
-    }
-
-    /** Отображается ли в карточке товара кнопка добавления в корзину. */
-    public boolean isCartButtonDisplayedInCard() {
-        ElementsCollection carts = $$x(Locators.FAVORITES_ITEMS + "//button[normalize-space()]");
-        return !carts.isEmpty() && carts.first().is(com.codeborne.selenide.Condition.visible);
-    }
-
-    /** Нажать иконку сердца у товара с указанным названием (удалить из избранного). */
-    public void removeByName(String name) {
-        HeartIcon.byXpath(String.format(Locators.FAVORITES_CARD_HEART_BY_NAME, name)).toggle();
-    }
-
-    /** Активна ли иконка сердца у товара с указанным названием. */
-    public boolean isHeartActiveByName(String name) {
-        if (!$x(String.format(Locators.FAVORITES_CARD_BY_NAME, name)).exists()) {
-            return false;
-        }
-        return HeartIcon.byXpath(String.format(Locators.FAVORITES_CARD_HEART_BY_NAME, name)).isActive();
-    }
-
-    /** Значение счётчика количества рядом с заголовком «Избранное». */
-    public int getHeaderCounter() {
-        try {
-            String text = $x(Locators.FAVORITES_HEADER_COUNTER).getText().replaceAll("\\D+", "");
-            return text.isEmpty() ? 0 : Integer.parseInt(text);
-        } catch (Throwable e) {
-            return 0;
+        if (favoriteProducts.isAnyProductPresent()) {
+            throw new IllegalStateException(
+                    "Не удалось полностью очистить избранное через UI");
         }
     }
 
-    /** Выбрать категорию в блоке фильтрации. */
-    public void selectCategory(String category) {
-        String href = $x(String.format(Locators.FAVORITES_CATEGORY_OPTION, category))
-                .shouldBe(visible, Duration.ofSeconds(15)).getAttribute("href");
-        open(href);
+    public void scrollToRecommendations() {
+        recommendations.scrollIntoView();
     }
 
-    public String getFirstAvailableCategory() {
-        return $x(Locators.FAVORITES_CATEGORY_FILTER + "//a[normalize-space()][1]")
-                .shouldBe(visible, Duration.ofSeconds(15)).getText().trim();
-    }
-
-    /** Сбросить фильтр — выбрать категорию «Все». */
-    public void selectAllCategories() {
-        open("https://www.ozon.ru/my/favorites");
-        $x(Locators.FAVORITES_TITLE).shouldBe(visible, Duration.ofSeconds(15));
-    }
-
-    /** Нажать кнопку корзины у товара с указанным названием (добавить в корзину). */
-    public void addToCartByName(String name) {
-        Button.byXpath(String.format(Locators.FAVORITES_CARD_CART_BY_NAME, name)).press();
-    }
-
-    /** Изменилась ли кнопка в карточке товара на состояние «В корзине». */
-    public boolean isInCartStateByName(String name) {
-        String card = String.format(Locators.FAVORITES_CARD_BY_NAME, name);
-        String addButton = String.format(Locators.FAVORITES_CARD_CART_BY_NAME, name);
-        String controls = card + "//*[self::button[contains(., 'В корзине')]"
-                + " or @type='addToCartButtonWithQuantity'"
-                + " or self::input[@inputmode='decimal']]";
-        long deadline = System.currentTimeMillis() + Duration.ofSeconds(15).toMillis();
-        while (System.currentTimeMillis() < deadline) {
-            if ($x(controls).exists() || ($x(card).exists() && !$x(addButton).exists())) {
-                return true;
-            }
-            sleep(250);
-        }
-        return false;
-    }
-
-    // --- Прокрутка и рекомендации ---
-
-    /** Прокрутить страницу вниз. */
-    public void scrollDown() {
-        com.codeborne.selenide.Selenide.executeJavaScript("window.scrollBy(0, document.body.scrollHeight);");
-        com.codeborne.selenide.Selenide.sleep(1500);
-    }
-
-    /** Отображается ли блок рекомендованных товаров. */
     public boolean isRecommendationsDisplayed() {
-        return exists(Locators.RECOMMENDATIONS_BLOCK);
+        return recommendations.isDisplayed();
     }
 
-    /** Количество карточек в блоке рекомендаций. */
     public int getRecommendationsCount() {
-        return $$x(Locators.RECOMMENDATIONS_ITEMS).size();
+        return recommendations.getProductCount();
     }
 
-    private boolean exists(String xpath) {
-        try {
-            return $x(xpath).shouldBe(visible, Duration.ofSeconds(15)).isDisplayed();
-        } catch (Throwable e) {
-            return false;
-        }
+    /** Прокручивает рекомендации и ожидает появления новых карточек. */
+    public void loadMoreRecommendations() {
+        recommendations.loadMoreProducts();
     }
 
-    private ElementsCollection items() {
-        return $$x(Locators.FAVORITES_ITEMS);
+    @Override
+    public FavoritesPage refreshPage() {
+        super.refreshPage();
+        return waitUntilLoaded();
+    }
+
+    FavoritesPage waitUntilLoaded() {
+        favoritesTitle.waitUntilDisplayed();
+        return this;
+    }
+
+    boolean isLoaded() {
+        return favoritesTitle.isPresent();
     }
 }
