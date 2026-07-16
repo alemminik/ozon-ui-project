@@ -50,7 +50,7 @@ public class AuthService {
     }
 
     private boolean isUserLoggedIn() {
-        return profileLink.isPresent();
+        return profileLink.isDisplayed();
     }
 
     private void waitUntilUserLoggedIn() {
