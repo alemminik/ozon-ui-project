@@ -10,11 +10,13 @@ public class MainPage extends BasePage {
     private final Header header = new Header();
 
     public SearchResultsPage search(String searchQuery) {
+        waitUntilDocumentReady();
         header.submitSearchQuery(searchQuery);
         return new SearchResultsPage().waitUntilLoaded();
     }
 
     public FavoritesPage openFavorites() {
+        waitUntilDocumentReady();
         FavoritesPage favoritesPage = new FavoritesPage();
         if (favoritesPage.isLoaded()) {
             return favoritesPage;
@@ -29,6 +31,7 @@ public class MainPage extends BasePage {
     }
 
     public CartPage openCart() {
+        waitUntilDocumentReady();
         CartPage cartPage = new CartPage();
         if (cartPage.isLoaded()) {
             return cartPage;

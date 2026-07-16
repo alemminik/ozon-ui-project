@@ -56,6 +56,7 @@ public class SearchResultsPage extends BasePage {
     }
 
     SearchResultsPage waitUntilLoaded() {
+        waitUntilDocumentReady();
         firstProductName.getText();
         return this;
     }

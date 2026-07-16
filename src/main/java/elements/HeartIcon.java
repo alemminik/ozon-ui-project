@@ -1,8 +1,10 @@
 package elements;
 
 import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ex.UIAssertionError;
 import org.openqa.selenium.WebElement;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -28,6 +30,7 @@ public class HeartIcon extends ClickableElement {
             ".//*[name()='path' and translate(@fill, 'abcdef', 'ABCDEF')='"
                     + ACTIVE_HEART_FILL_COLOR + "']";
     private static final String EXPECTED_STATE_DESCRIPTION = "состояние избранного: %s";
+    private static final Duration FIRST_STATE_CHANGE_TIMEOUT = Duration.ofSeconds(5);
 
     private HeartIcon(SelenideElement element) {
         super(element);
@@ -38,7 +41,16 @@ public class HeartIcon extends ClickableElement {
     public void click() {
         boolean wasActive = isActive();
         super.click();
-        waitUntilActiveState(!wasActive);
+        boolean expectedActiveState = !wasActive;
+        if (isActiveStateReached(expectedActiveState, FIRST_STATE_CHANGE_TIMEOUT)) {
+            return;
+        }
+
+        // При pageLoadStrategy=none кнопка иногда видима до подключения обработчика Ozon.
+        if (isActive() == wasActive) {
+            super.click();
+        }
+        waitUntilActiveState(expectedActiveState, ELEMENT_WAIT_TIMEOUT);
     }
 
     /** Переключает состояние товара в избранном реальным пользовательским кликом. */
@@ -50,11 +62,24 @@ public class HeartIcon extends ClickableElement {
         return isActiveState(waitUntilVisible());
     }
 
-    private void waitUntilActiveState(boolean expectedActiveState) {
+    private boolean isActiveStateReached(
+            boolean expectedActiveState,
+            Duration stateChangeTimeout) {
+        try {
+            waitUntilActiveState(expectedActiveState, stateChangeTimeout);
+            return true;
+        } catch (UIAssertionError firstClickTimeout) {
+            return false;
+        }
+    }
+
+    private void waitUntilActiveState(
+            boolean expectedActiveState,
+            Duration stateChangeTimeout) {
         element.shouldHave(match(
                 String.format(EXPECTED_STATE_DESCRIPTION, expectedActiveState),
                 currentElement -> isActiveState(currentElement) == expectedActiveState),
-                ELEMENT_WAIT_TIMEOUT);
+                stateChangeTimeout);
     }
 
     private static boolean isActiveState(WebElement currentElement) {
