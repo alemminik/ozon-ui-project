@@ -18,9 +18,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class FavoritesPageTest extends BaseTest {
 
     private static final String ELECTRONICS_CATEGORY_NAME = "Электроника";
+    private static final String COMPONENTS_TEST_DISPLAY_NAME =
+            "1. Корректное отображение раздела «Избранное»";
+    private static final String REFRESH_TEST_DISPLAY_NAME =
+            "5. Сохранение списка избранного после обновления";
+    private static final String FILTER_TEST_DISPLAY_NAME =
+            "7. Фильтрация избранного по категории";
+    private static final String RECOMMENDATIONS_TEST_DISPLAY_NAME =
+            "10. Подгрузка рекомендаций под разделом «Избранное»";
+    private static final String FAVORITES_TITLE_ASSERTION = "Заголовок «Избранное»";
+    private static final String FAVORITES_LIST_ASSERTION = "Список добавленных товаров";
+    private static final String CATEGORY_FILTER_ASSERTION = "Фильтр категорий";
+    private static final String PRODUCT_NAME_AND_PRICE_ASSERTION = "Название и цена в карточке";
+    private static final String ADD_TO_CART_BUTTON_ASSERTION = "Кнопка добавления в корзину";
+    private static final String PRODUCT_COUNT_PRESERVED_ASSERTION = "Количество товаров сохранилось";
+    private static final String PRODUCT_PRESERVED_ASSERTION = "Товар остался после обновления";
+    private static final String FILTERED_PRODUCT_COUNT_ASSERTION = "После фильтра товаров меньше";
+    private static final String RESET_PRODUCT_COUNT_ASSERTION =
+            "После сброса снова показаны все товары";
+    private static final String FAVORITES_LIST_SHORT_ASSERTION = "Список избранного";
+    private static final String RECOMMENDATIONS_SECTION_ASSERTION = "Блок рекомендаций";
+    private static final String MORE_RECOMMENDATIONS_ASSERTION =
+            "Подгрузились новые рекомендации";
 
     @Test
-    @DisplayName("1. Корректное отображение раздела «Избранное»")
+    @DisplayName(COMPONENTS_TEST_DISPLAY_NAME)
     public void shouldDisplayFavoritesSectionComponents() {
         accountStateService.addFirstSearchResultToFavorites(PRIMARY_ELECTRONICS);
         accountStateService.addFirstSearchResultToFavorites(NON_ELECTRONICS);
@@ -32,17 +54,17 @@ public class FavoritesPageTest extends BaseTest {
         MainPage mainPage = new MainPage();
         FavoritesPage favoritesPage = mainPage.openFavorites();
 
-        assertThat(favoritesPage.isFavoritesTitleDisplayed()).as("Заголовок «Избранное»").isTrue();
-        assertThat(favoritesPage.isFavoritesListDisplayed()).as("Список добавленных товаров").isTrue();
-        assertThat(favoritesPage.isCategoryFilterDisplayed()).as("Фильтр категорий").isTrue();
+        assertThat(favoritesPage.isFavoritesTitleDisplayed()).as(FAVORITES_TITLE_ASSERTION).isTrue();
+        assertThat(favoritesPage.isFavoritesListDisplayed()).as(FAVORITES_LIST_ASSERTION).isTrue();
+        assertThat(favoritesPage.isCategoryFilterDisplayed()).as(CATEGORY_FILTER_ASSERTION).isTrue();
         assertThat(favoritesPage.isFirstFavoriteProductNameAndPriceDisplayed())
-                .as("Название и цена в карточке").isTrue();
+                .as(PRODUCT_NAME_AND_PRICE_ASSERTION).isTrue();
         assertThat(favoritesPage.isAnyFavoriteProductCartButtonDisplayed())
-                .as("Кнопка добавления в корзину").isTrue();
+                .as(ADD_TO_CART_BUTTON_ASSERTION).isTrue();
     }
 
     @Test
-    @DisplayName("5. Сохранение списка избранного после обновления")
+    @DisplayName(REFRESH_TEST_DISPLAY_NAME)
     public void shouldPreserveFavoritesAfterPageRefresh() {
         accountStateService.addFirstSearchResultToFavorites(PRIMARY_ELECTRONICS);
         MainPage mainPage = new MainPage();
@@ -52,14 +74,14 @@ public class FavoritesPageTest extends BaseTest {
 
         favoritesPage.refreshPage();
 
-        assertThat(favoritesPage.getFavoriteProductCount()).as("Количество товаров сохранилось")
+        assertThat(favoritesPage.getFavoriteProductCount()).as(PRODUCT_COUNT_PRESERVED_ASSERTION)
                 .isEqualTo(favoritesCountBeforeRefresh);
         assertThat(favoritesPage.isFavoriteProductDisplayed(firstProductName))
-                .as("Товар остался после обновления").isTrue();
+                .as(PRODUCT_PRESERVED_ASSERTION).isTrue();
     }
 
     @Test
-    @DisplayName("7. Фильтрация избранного по категории")
+    @DisplayName(FILTER_TEST_DISPLAY_NAME)
     public void shouldFilterFavoritesByCategory() {
         accountStateService.addFirstSearchResultToFavorites(PRIMARY_ELECTRONICS);
         accountStateService.addFirstSearchResultToFavorites(NON_ELECTRONICS);
@@ -74,29 +96,30 @@ public class FavoritesPageTest extends BaseTest {
 
         favoritesPage.selectFavoritesCategory(ELECTRONICS_CATEGORY_NAME);
 
-        assertThat(favoritesPage.getFavoriteProductCount()).as("После фильтра товаров меньше")
+        assertThat(favoritesPage.getFavoriteProductCount()).as(FILTERED_PRODUCT_COUNT_ASSERTION)
                 .isLessThan(totalFavoritesCount);
 
         favoritesPage.clearFavoritesCategoryFilter();
-        assertThat(favoritesPage.getFavoriteProductCount()).as("После сброса снова показаны все товары")
+        assertThat(favoritesPage.getFavoriteProductCount()).as(RESET_PRODUCT_COUNT_ASSERTION)
                 .isEqualTo(totalFavoritesCount);
     }
 
     @Test
-    @DisplayName("10. Подгрузка рекомендаций под разделом «Избранное»")
+    @DisplayName(RECOMMENDATIONS_TEST_DISPLAY_NAME)
     public void shouldLoadRecommendationsAfterScroll() {
         accountStateService.addFirstSearchResultToFavorites(PRIMARY_ELECTRONICS);
         MainPage mainPage = new MainPage();
         FavoritesPage favoritesPage = mainPage.openFavorites();
-        assertThat(favoritesPage.isFavoritesListDisplayed()).as("Список избранного").isTrue();
+        assertThat(favoritesPage.isFavoritesListDisplayed()).as(FAVORITES_LIST_SHORT_ASSERTION).isTrue();
 
         favoritesPage.scrollToRecommendations();
-        assertThat(favoritesPage.isRecommendationsDisplayed()).as("Блок рекомендаций").isTrue();
+        assertThat(favoritesPage.isRecommendationsDisplayed())
+                .as(RECOMMENDATIONS_SECTION_ASSERTION).isTrue();
         int recommendationsCountBeforeLoading = favoritesPage.getRecommendationsCount();
 
         favoritesPage.loadMoreRecommendations();
 
-        assertThat(favoritesPage.getRecommendationsCount()).as("Подгрузились новые рекомендации")
+        assertThat(favoritesPage.getRecommendationsCount()).as(MORE_RECOMMENDATIONS_ASSERTION)
                 .isGreaterThan(recommendationsCountBeforeLoading);
     }
 }

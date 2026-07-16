@@ -17,23 +17,29 @@ public class CartControls extends BaseElement {
             "//button[normalize-space()='Удалить товары'"
                     + " or normalize-space()='Удалить']";
 
+    private final Checkbox selectAllCheckbox;
+    private final Button deleteSelectedButton;
+    private final ButtonCollection confirmationButtons;
+
     private CartControls(SelenideElement element) {
         super(element);
+        selectAllCheckbox = Checkbox.from(element.$x(SELECT_ALL_CHECKBOX_RELATIVE_XPATH));
+        deleteSelectedButton = Button.from(
+                element.$x(DELETE_SELECTED_BUTTON_RELATIVE_XPATH));
+        confirmationButtons = ButtonCollection.byXPath(CONFIRM_DELETION_BUTTON_XPATH);
     }
 
     /** Выбирает и удаляет все товары, если корзина не пуста. */
     public void removeAllProducts() {
         waitUntilVisible();
-        SelenideElement deleteSelectedButton =
-                element.$x(DELETE_SELECTED_BUTTON_RELATIVE_XPATH);
-        if (!deleteSelectedButton.exists()) {
+        if (!deleteSelectedButton.isPresent()) {
             return;
         }
 
-        Checkbox.from(element.$x(SELECT_ALL_CHECKBOX_RELATIVE_XPATH)).select();
-        Button.from(deleteSelectedButton).click();
-        Button.byXPath(CONFIRM_DELETION_BUTTON_XPATH).click();
-        deleteSelectedButton.should(disappear, ELEMENT_WAIT_TIMEOUT);
+        selectAllCheckbox.select();
+        deleteSelectedButton.click();
+        confirmationButtons.clickFirstVisible();
+        element.should(disappear, ELEMENT_WAIT_TIMEOUT);
     }
 
     public static CartControls byXPath(String xpathExpression) {

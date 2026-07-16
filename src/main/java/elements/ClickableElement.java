@@ -4,6 +4,7 @@ import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ScrollIntoViewOptions;
 import core.BaseElement;
 
+import static com.codeborne.selenide.Condition.interactable;
 import static com.codeborne.selenide.ScrollIntoViewOptions.Block.center;
 import static com.codeborne.selenide.ScrollIntoViewOptions.Inline.nearest;
 
@@ -19,6 +20,8 @@ public abstract class ClickableElement extends BaseElement implements Clickable 
 
     @Override
     public void click() {
-        waitUntilVisible().scrollIntoView(CENTERED_SCROLL_OPTIONS).click();
+        element.shouldBe(interactable, ELEMENT_WAIT_TIMEOUT)
+                .scrollIntoView(CENTERED_SCROLL_OPTIONS)
+                .click();
     }
 }
