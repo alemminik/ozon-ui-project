@@ -30,6 +30,7 @@ public class ProductPage extends BasePage {
     }
 
     ProductPage waitUntilLoaded() {
+        waitUntilDocumentReady();
         productTitle.getText();
         return this;
     }

@@ -165,6 +165,7 @@ public class FavoritesPage extends BasePage {
     }
 
     FavoritesPage waitUntilLoaded() {
+        waitUntilDocumentReady();
         favoritesTitle.waitUntilDisplayed();
         return this;
     }

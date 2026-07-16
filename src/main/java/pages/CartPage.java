@@ -31,6 +31,7 @@ public class CartPage extends BasePage {
     }
 
     CartPage waitUntilLoaded() {
+        waitUntilDocumentReady();
         cartPageState.waitUntilDisplayed();
         return this;
     }

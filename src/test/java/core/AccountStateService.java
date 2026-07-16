@@ -10,8 +10,8 @@ import java.time.Duration;
 /** Подготавливает и очищает данные отдельного тестового аккаунта через UI. */
 public class AccountStateService {
 
-    private static final Duration CATEGORY_FILTER_READY_TIMEOUT = Duration.ofSeconds(45);
-    private static final Duration CATEGORY_FILTER_POLL_INTERVAL = Duration.ofSeconds(2);
+    private static final Duration CATEGORY_FILTER_READY_TIMEOUT = Duration.ofSeconds(90);
+    private static final Duration CATEGORY_FILTER_POLL_INTERVAL = Duration.ofSeconds(10);
     private static final String PRODUCT_ALREADY_FAVORITE_MESSAGE_TEMPLATE =
             "Товар уже находится в избранном после очистки: %s";
     private static final String CATEGORY_FILTER_TIMEOUT_MESSAGE =
