@@ -7,38 +7,44 @@ import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Базовый класс всех тестов.
- * Выполняет изначальную настройку браузера, авторизацию и закрытие браузера.
- * Тесты наследуются от него и вызывают только методы страниц.
- *
- * Логика авторизации вынесена в отдельный сервис {@link AuthService}
- */
+import java.time.Duration;
+
+/** Настраивает браузер, авторизацию и завершение сессии для UI-тестов. */
 public abstract class BaseTest {
 
-    protected static final Logger log = LoggerFactory.getLogger(BaseTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseTest.class);
+    private static final String BROWSER_NAME = "chrome";
+    private static final String BROWSER_SIZE = "1920x1080";
+    private static final String PAGE_LOAD_STRATEGY = "none";
+    private static final Duration ELEMENT_WAIT_TIMEOUT = Duration.ofSeconds(15);
+    private static final boolean HEADLESS_MODE_ENABLED = false;
 
     private final AuthService authService = new AuthService();
+    protected final AccountStateService accountStateService = new AccountStateService();
 
     @BeforeEach
     public void setUp() {
-        log.info("Настройка браузера перед тестом");
-        Configuration.browser = "chrome";
-        Configuration.browserSize = "1920x1080";
-        Configuration.pageLoadStrategy = "eager";
-        Configuration.timeout = 15000;
-        Configuration.headless = false; // Ozon блокирует headless-режим
+        LOGGER.info("Настройка браузера перед тестом");
+        Configuration.browser = BROWSER_NAME;
+        Configuration.browserSize = BROWSER_SIZE;
+        Configuration.pageLoadStrategy = PAGE_LOAD_STRATEGY;
+        Configuration.timeout = ELEMENT_WAIT_TIMEOUT.toMillis();
+        Configuration.headless = HEADLESS_MODE_ENABLED;
+        Configuration.browserCapabilities = AuthService.createBrowserOptions();
 
-        // Настройки браузера с постоянным профилем (хранит сессию авторизации)
-        Configuration.browserCapabilities = AuthService.browserOptions();
-
-        // Гарантируем авторизацию (не считается действием теста)
-        authService.login();
+        authService.openHomePageAndEnsureUserLoggedIn();
+        accountStateService.clearFavoritesAndCart();
+        authService.openHomePageAndEnsureUserLoggedIn();
     }
 
     @AfterEach
     public void tearDown() {
-        log.info("Закрытие браузера после теста");
-        Selenide.closeWebDriver();
+        try {
+            LOGGER.info("Очистка данных после теста");
+            accountStateService.clearFavoritesAndCart();
+        } finally {
+            LOGGER.info("Закрытие браузера после теста");
+            Selenide.closeWebDriver();
+        }
     }
 }

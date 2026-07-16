@@ -1,5 +1,6 @@
 ﻿# IDE
 .idea/
+.DS_Store
 
 # Maven
 target/
@@ -12,4 +13,3 @@ chrome-profile/
 
 # Логи и отчёты
 *.log
-
