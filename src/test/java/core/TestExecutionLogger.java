@@ -26,17 +26,6 @@ public class TestExecutionLogger implements AfterTestExecutionCallback {
         SCREENSHOT_SERIES.remove();
     }
 
-    static void startScreenshotSeries(String screenshotPathPattern) {
-        SCREENSHOT_SERIES.set(new ScreenshotSeries(screenshotPathPattern));
-    }
-
-    static void recordSavedScreenshot() {
-        ScreenshotSeries screenshotSeries = SCREENSHOT_SERIES.get();
-        if (screenshotSeries != null) {
-            screenshotSeries.incrementSavedScreenshotCount();
-        }
-    }
-
     private void logScreenshotSeries() {
         ScreenshotSeries screenshotSeries = SCREENSHOT_SERIES.get();
         if (screenshotSeries != null && screenshotSeries.savedScreenshotCount > 0) {
@@ -58,6 +47,17 @@ public class TestExecutionLogger implements AfterTestExecutionCallback {
 
         private void incrementSavedScreenshotCount() {
             savedScreenshotCount++;
+        }
+    }
+
+    static void startScreenshotSeries(String screenshotPathPattern) {
+        SCREENSHOT_SERIES.set(new ScreenshotSeries(screenshotPathPattern));
+    }
+
+    static void recordSavedScreenshot() {
+        ScreenshotSeries screenshotSeries = SCREENSHOT_SERIES.get();
+        if (screenshotSeries != null) {
+            screenshotSeries.incrementSavedScreenshotCount();
         }
     }
 }
