@@ -31,10 +31,11 @@ public abstract class BaseTest {
             "Скриншот перед шагом %d не сохранён: %s";
     private static final String SCREENSHOT_SERIES_FILE_NAME_TEMPLATE =
             "%s-%s-step-XX-before.png";
+    private static final String TEST_RUN_TIMESTAMP_PATTERN = "yyyyMMdd-HHmmss-SSS";
     private static final Duration ELEMENT_WAIT_TIMEOUT = Duration.ofSeconds(15);
     private static final boolean HEADLESS_MODE_ENABLED = false;
     private static final DateTimeFormatter TEST_RUN_TIMESTAMP_FORMAT =
-            DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS");
+            DateTimeFormatter.ofPattern(TEST_RUN_TIMESTAMP_PATTERN);
 
     private final AuthService authService = new AuthService();
     protected final AccountStateService accountStateService = new AccountStateService();
